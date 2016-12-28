@@ -1,0 +1,93 @@
+#! /bin/sh
+# Copyright (C) 1998-2016 Free Software Foundation, Inc.
+# This file is part of the GNU C Library.
+# Contributed by Pi Zhenwei <pizhenwei@huawei>, 2016
+
+# The GNU C Library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+
+# The GNU C Library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public
+# License along with the GNU C Library; if not, see
+# <http://www.gnu.org/licenses/>.
+
+DEFAULT_MALLOC_TRACE=$HOME/catchleak
+
+record()
+{
+  shift
+  #echo " in record : $# : $@"
+  if [ $# -le 0 ]; then
+    echo "$0: missing arguments" >&2
+    exit 1
+  fi
+
+  if [ -z "$MALLOC_TRACE" ]; then
+    echo "MALLOC_TRACE is emtpy, use default : $DEFAULT_MALLOC_TRACE"
+    MALLOC_TRACE=$DEFAULT_MALLOC_TRACE
+  fi
+
+  mkdir -p $MALLOC_TRACE
+  LD_PRELOAD=${LD_PRELOAD:+${LD_PRELOAD}:}/lib/catchleak.so
+  export MALLOC_TRACE
+  export LD_PRELOAD
+  echo 'recording ...'
+  (exec 3>&2 2>/dev/null
+  #echo "LD_PRELOAD : $LD_PRELOAD"; \
+  $@ 2>&3 3>&-)
+}
+
+report()
+{
+  if [ -z "$MALLOC_TRACE" ]; then
+    MALLOC_TRACE=$DEFAULT_MALLOC_TRACE
+    echo "MALLOC_TRACE is : $MALLOC_TRACE"
+  fi
+
+  for trace in `ls $MALLOC_TRACE | grep catchleak_mtrace`;
+  do
+	echo "----------------------$MALLOC_TRACE/$trace-------------------"
+    mtrace $MALLOC_TRACE/$trace
+  done
+}
+
+parse()
+{
+  case "$1" in
+    --v | --ve | --ver | --vers | --versi | --versio | --version)
+      echo 'catchleak 0.1'
+      exit 0
+      ;;
+    --rec | --record)
+      record "$@"
+      exit 0
+      ;;
+    --rep | --report)
+      report
+      exit 0
+      ;;
+    --h | --he | --hel | --help | *)
+      echo 'Usage: catchleak PROGRAM ARGS...'
+      echo '  --help      print this help'
+      echo '  --version   print version number'
+      echo 'If you meet any bug:'
+      echo 'contact with pizhenwei@huawei.com'
+      exit 0
+      ;;
+  esac
+}
+
+if test $# -eq 0; then
+  echo "$0: missing arguments" >&2
+  echo "Try \`$0 --help' for more information." >&2
+  exit 1
+fi
+
+parse "$@"
+exit 0
