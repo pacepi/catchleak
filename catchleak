@@ -60,8 +60,6 @@ parse()
       echo 'Usage: catchleak PROGRAM ARGS...'
       echo '  --help      print this help'
       echo '  --version   print version number'
-      echo 'If you meet any bug:'
-      echo 'contact with pizhenwei@huawei.com'
       exit 0
       ;;
   esac
